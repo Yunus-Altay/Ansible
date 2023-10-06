@@ -1,0 +1,19 @@
+plugin: aws_ec2
+regions:
+  - "us-east-1"
+# filters:
+#   tag:env: dev
+
+keyed_groups:
+  # - key: tags.Name
+  #   prefix: "k8s"
+  # - key: instance_type
+  - key: tags.centos
+    separator: ""
+  - key: tags.debian
+    separator: ""
+  # - key: tags
+  #   separator: ""
+
+compose:
+  ansible_host: public_ip_address

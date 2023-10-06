@@ -1,0 +1,13 @@
+- name: ping them all
+  hosts: centos
+  tasks:
+    - name: pinging
+      ansible.builtin.ping:
+
+- name: ping them all
+  hosts: debian
+  vars:
+    ansible_user: ubuntu
+  tasks:
+    - name: pinging
+      ansible.builtin.ping:
