@@ -1,0 +1,16 @@
+---
+- name: find john's instance
+  hosts: "*"
+  tasks:
+   - ansible.builtin.shell: "cd .. ; ls"
+     register: result
+
+   - ansible.builtin.debug: 
+      var: result
+
+   - ansible.builtin.debug: 
+      msg: "john's instance"
+     when: result.stdout.find("john") != -1
+
+   
+    

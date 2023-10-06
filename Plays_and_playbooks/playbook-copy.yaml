@@ -1,0 +1,24 @@
+---
+- name: Copy for linux
+  hosts: webservers
+  tasks:
+   - name: Copy your file to the webservers
+     ansible.builtin.copy:
+       src: /home/ec2-user/testfile
+       dest: /home/ec2-user/testfile
+
+- name: Copy for ubuntu
+  hosts: ubuntuservers
+  tasks:
+   - name: Copy your file to the ubuntuservers
+     ansible.builtin.copy:
+       src: /home/ec2-user/testfile
+       dest: /home/ubuntu/testfile
+      
+- name: Copy for all
+  hosts: all
+  tasks:
+   - name: Copy your file to all the servers
+     ansible.builtin.copy:
+       src: ~/testfile_2
+       dest: ~/testfile_2
