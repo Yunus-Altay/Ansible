@@ -5,7 +5,7 @@ ansible-vault create secret.yaml
 # password: qaz321
 # give permission to the control node for it to access the Systems Manager on AWS
 echo '#!/bin/bash' > vault_passwd.sh
-# name is set "ans-vault_passwd" and the value "secret123"
+# The name is set "ans-vault_passwd" and the value "secret123" in the System Manager
 echo 'aws --region=us-east-1 ssm get-parameters --names "ans-vault_passwd" --query "Parameters[*].{Value:Value}" --output text' >> vault_passwd.sh
 chmod +x vault_passwd.sh
 ansible-vault view secret.yaml --vault-password-file ./vault_passwd.sh
