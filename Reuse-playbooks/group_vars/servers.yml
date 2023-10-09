@@ -1,5 +1,0 @@
-db_name: phonebook_db
-db_table: phonebook
-db_user: remoteUser
-db_password: clarus1234
-# the folder is named after the corresponding host group name
