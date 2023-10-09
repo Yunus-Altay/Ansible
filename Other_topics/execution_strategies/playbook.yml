@@ -1,0 +1,34 @@
+---
+- hosts: servers
+  # any_errors_fatal: true
+  # # If a task returns an error on one of the hosts with 'any_errors_fatal', ansible stops executing the play on all hosts.
+  # # Subsequent tasks and plays are not executed
+  # strategy: free
+  # # With the free strategy, unlike the default linear strategy, a host that is slow or stuck on a specific task won’t hold up the rest of the hosts and tasks 
+  # serial: 2
+  # # By default, Ansible runs in parallel against all the hosts
+  # # If you want to manage only a few machines at a time, for example during a rolling update, you can define how many hosts Ansible should manage at a single time using the serial keyword
+  # # ansible-config dump | grep 'DEFAULT_FORKS(default)' ==> DEFAULT_FORKS(default) = 5
+  # # ansible-config dump | grep 'DEFAULT_FORKS(default)'
+  tasks:
+    - ansible.builtin.debug:
+        msg: "task 1"
+
+    - ansible.builtin.debug:
+        msg: "task 2"
+
+   # our intention is to make node3 fail in the third task.
+    - name: task 3
+      become: true
+      ansible.builtin.apt:
+        name: git
+        state: present
+      # ignore_errors: true
+      # # by default Ansible stops executing tasks on a host when a task fails on that host.
+      # # you can use 'ignore_errors' to continue on in spite of the failure.
+
+    - ansible.builtin.debug:
+        msg: "task 4"
+
+    - ansible.builtin.debug:
+        msg: "task 5"

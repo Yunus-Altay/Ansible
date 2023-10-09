@@ -1,0 +1,48 @@
+---
+- hosts: all
+  tasks:
+  - name: show IP address
+    ansible.builtin.debug:
+      msg: >
+       This host uses IP address {{ ansible_facts.default_ipv4.address }}
+
+      # Alternative:
+      # This host uses IP address {{ ansible_facts['default_ipv4']['address'] }}
+
+  - name: db configuration
+    become: true
+    hosts: db_server
+    vars:
+      hostname: cw_db_server
+      db_user: remoteUser
+      db_password: clarus1234
+      # variables can be set in so many ways, e.g. in the inventory file
+
+  tasks:
+    - name: set hostname
+      ansible.builtin.shell: "sudo hostnamectl set-hostname {{ hostname }}"
+
+    - name: Installing Mysql  and dependencies
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - mysql-server
+        - mysql-client
+        - python3-mysqldb
+        - libmysqlclient-dev
+
+    - name: start and enable mysql service
+      ansible.builtin.service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: creating mysql user
+      community.mysql.mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: '*.*:ALL'
+        host: '%'
+        state: present
