@@ -16,7 +16,7 @@
       hostname: cw_db_server
       db_user: remoteUser
       db_password: clarus1234
-      # variables can be set in so many ways, e.g. in the inventory file
+      # variables can be set in so many ways, e.g. in the playbook or inventory file
 
   tasks:
     - name: set hostname

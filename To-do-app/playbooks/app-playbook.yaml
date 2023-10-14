@@ -1,0 +1,203 @@
+---
+- name: CONFIGURE POSTGRESQL
+  hosts: _development
+  become: true
+  tasks:
+    - name: upgrade all packages
+      ansible.builtin.yum:
+        name: '*'
+        state: latest
+    
+    - name: Remove older docker versions
+      ansible.builtin.yum:
+        name: "{{ item }}"
+        state: removed
+      loop:
+        - docker
+        - docker-client
+        - docker-client-latest
+        - docker-common
+        - docker-latest
+        - docker-latest-logrotate
+        - docker-logrotate
+        - docker-engine
+    
+    - name: Install yum utils
+      ansible.builtin.yum:
+        name: yum-utils
+        state: latest
+    
+    - name: Set up repo
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install docker
+      ansible.builtin.package:
+        name: docker-ce
+        state: latest
+
+    - name: Add ec2-user user to docker group
+      ansible.builtin.user:
+        name: ec2-user
+        groups: docker
+        append: yes
+    
+    - name: Start and enable docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+- name: CONFIGURE POSTGRESQL
+  hosts: _ansible_postgresql
+  vars_files:
+    - postgres-secret.yaml
+  become: true
+  tasks:
+    - name: Copy files to the postgresql node
+      ansible.builtin.copy:
+        src: /home/ec2-user/ansible/ansible-project/postgres/
+        dest: /home/ec2-user/postgresql
+
+    - name: Remove postgres-db container if exists   
+      docker_container:
+        name: postgres-db
+        state: absent
+        force_kill: true
+    
+    - name: Remove postgres image if exists
+      community.docker.docker_image:
+        name: simaox/postgres
+        state: absent      
+
+    - name: Build postgres image and push it to the private repo
+      community.docker.docker_image:
+        build:
+          path: /home/ec2-user/postgresql
+        name: simaox/postgres
+        source: build
+      register: image_info
+    
+    - name: Verify postgres image
+      ansible.builtin.debug:
+        var: image_info
+    
+    - name: Create postgres container
+      community.docker.docker_container:
+        name: postgres-db
+        image: simaox/postgres
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_PASSWORD: "{{ POSTGRES_PASSWORD }}"          
+        volumes:
+          - postgres-vol:/var/lib/postgresql/data
+        detach: yes
+      register: container_info
+
+    - name: Verify postgres container
+      ansible.builtin.debug:
+        var: container_info 
+
+- name: CONFIGURE NODEJS
+  hosts: _ansible_nodejs
+  become: true
+  tasks:
+    - name: Copy files to the nodejs node
+      ansible.builtin.copy:
+        src: /home/ec2-user/ansible/ansible-project/nodejs/
+        dest: /home/ec2-user/nodejs
+    
+    - name: Insert the private IP of the database server to env file
+      ansible.builtin.replace:
+         path: /home/ec2-user/nodejs/.env
+         regexp: <private ip of postgresql instance>
+         replace: "{{ hostvars['Name_ansible_postgresql'].ans_private_ip }}"
+
+    - name: Remove nodejs-backend container if exists
+      community.docker.docker_container:
+        name: nodejs-backend
+        state: absent
+        force_kill: true
+
+    - name: Remove nodejs image if exists
+      community.docker.docker_image:
+        name: simaox/nodejs
+        state: absent
+
+    - name: Build nodejs image and push it to the private repo
+      community.docker.docker_image:
+        build:
+          path: /home/ec2-user/nodejs
+        name: simaox/nodejs
+        source: build
+      register: image_info
+    
+    - name: Verify nodejs image
+      ansible.builtin.debug:
+        var: image_info
+    
+    - name: Create nodejs container
+      community.docker.docker_container:
+        name: nodejs-backend
+        image: simaox/nodejs
+        ports:
+          - "5000:5000"
+        detach: yes
+      register: container_info
+
+    - name: Verify nodejs container
+      ansible.builtin.debug:
+        var: container_info
+
+- name: CONFIGURE REACT
+  hosts: _ansible_react
+  become: true
+  tasks:
+    - name: Copy files to the react node
+      ansible.builtin.copy:
+        src: /home/ec2-user/ansible/ansible-project/react/
+        dest: /home/ec2-user/react
+    
+    - name: Insert the public IP of the backend server to env file
+      ansible.builtin.replace:
+         path: /home/ec2-user/react/.env
+         regexp: <public ip of nodejs>
+         replace: "{{ hostvars['Name_ansible_nodejs'].ans_public_ip }}"
+
+    - name: Remove react-frontend container if exists
+      community.docker.docker_container:
+        name: react-frontend
+        state: absent
+        force_kill: true
+
+    - name: Remove react image if exists
+      community.docker.docker_image:
+        name: simaox/react
+        state: absent
+
+    - name: Build react image and push it to the private repo
+      community.docker.docker_image:
+        build:
+          path: /home/ec2-user/react
+        name: simaox/react
+        source: build
+      register: image_info
+    
+    - name: Verify react image
+      ansible.builtin.debug:
+        var: image_info
+    
+    - name: Create react container
+      community.docker.docker_container:
+        name: react-frontend
+        image: simaox/react
+        ports:
+          - "3000:3000"
+        detach: yes
+      register: container_info
+
+    - name: Verify react container
+      ansible.builtin.debug:
+        var: container_info
